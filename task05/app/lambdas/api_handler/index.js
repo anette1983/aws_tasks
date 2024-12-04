@@ -2,9 +2,11 @@ const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
-const tableName = process.env.table_name;
+const tableName = process.env.target_table;
+console.log('Table Name:', tableName);
 
 exports.handler = async (event) => {
+	console.log('event', event);
 	try {
 		const requestBody = JSON.parse(event.body);
 
@@ -21,6 +23,7 @@ exports.handler = async (event) => {
 			createdAt: new Date().toISOString(),
 			body: requestBody.content,
 		};
+		console.log('New Event:', JSON.stringify(newEvent, null, 2));
 
 		await dynamoDb
 			.put({
@@ -31,7 +34,10 @@ exports.handler = async (event) => {
 
 		return {
 			statusCode: 201,
-			body: JSON.stringify({ statusCode: 201, event: newEvent }),
+			body: JSON.stringify({
+				statusCode: 201,
+				event: newEvent,
+			}),
 		};
 	} catch (error) {
 		console.error('Error saving event:', error);
