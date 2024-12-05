@@ -13,7 +13,7 @@ exports.handler = async (event) => {
 			ids: uuids,
 		};
 
-		const fileName = `${timestamp}.json`;
+		const fileName = `${timestamp}`;
 
 		await s3
 			.putObject({
