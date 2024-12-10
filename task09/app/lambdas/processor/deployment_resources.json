@@ -1,5 +1,5 @@
 {
-	"processor-role-lambda": {
+	"processor-role": {
 		"predefined_policies": [],
 		"principal_service": "lambda",
 		"custom_policies": ["lambda-basic-execution", "AWSXrayFullAccess"],
