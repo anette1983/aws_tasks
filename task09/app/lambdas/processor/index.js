@@ -13,15 +13,31 @@ exports.handler = async () => {
 
 		const weatherData = response.data;
 
-		const item = {
+		const formattedData = {
 			id: uuidv4(),
-			forecast: weatherData,
+			forecast: {
+				elevation: weatherData.elevation,
+				generationtime_ms: weatherData.generationtime_ms,
+				hourly: {
+					temperature_2m: weatherData.hourly.temperature_2m,
+					time: weatherData.hourly.time,
+				},
+				hourly_units: {
+					temperature_2m: weatherData.hourly_units.temperature_2m,
+					time: weatherData.hourly_units.time,
+				},
+				latitude: weatherData.latitude,
+				longitude: weatherData.longitude,
+				timezone: weatherData.timezone,
+				timezone_abbreviation: weatherData.timezone_abbreviation,
+				utc_offset_seconds: weatherData.utc_offset_seconds,
+			},
 		};
 
 		await dynamoDB
 			.put({
 				TableName: WEATHER_TABLE,
-				Item: item,
+				Item: formattedData,
 			})
 			.promise();
 
