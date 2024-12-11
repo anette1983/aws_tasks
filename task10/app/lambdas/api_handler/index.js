@@ -185,24 +185,20 @@ const getAllTables = async () => {
 	return data.Items;
 };
 
-const getReservationsByTableNumber = async () => {
+const getReservationsByTableNumber = async (tableNumber) => {
 	const allReservations = await getAllReservations();
 	return allReservations.filter((r) => r.tableNumber === tableNumber);
 };
 
-const isOverlapping = async (newRes, existingRes) => {
-	const newStart = new Date(`${newRes.date}T${newRes.slotTimeStart}:00`);
-	const newEnd = new Date(`${newRes.date}T${newRes.slotTimeEnd}:00`);
-
+const isOverlapping = (newRes, existingRes) => {
 	return existingRes.some((res) => {
-		const resStart = new Date(`${res.date}T${res.slotTimeStart}:00`);
-		const resEnd = new Date(`${res.date}T${res.slotTimeEnd}:00`);
+		const resStart = new Date(`${res.date} ${res.slotTimeStart}`);
+		const resEnd = new Date(`${res.date} ${res.slotTimeEnd}`);
+		const newStart = new Date(`${newRes.date} ${newRes.slotTimeStart}`);
+		const newEnd = new Date(`${newRes.date} ${newRes.slotTimeEnd}`);
 
-		if (newStart < resEnd && newStart >= resStart) return true;
-		if (newEnd <= resEnd && newEnd > resStart) return true;
-		if (resStart <= newStart && resEnd >= newEnd) return true;
-		if (newStart <= resStart && newEnd >= resEnd) return true;
-
+		if (resStart <= newStart && resEnd >= newStart) return true;
+		if (resStart <= newEnd && resEnd >= newEnd) return true;
 		return false;
 	});
 };
