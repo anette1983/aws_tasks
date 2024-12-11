@@ -1,0 +1,114 @@
+{
+	"lambda-basic-execution": {
+		"policy_content": {
+			"Statement": [
+				{
+					"Action": [
+						"logs:CreateLogGroup",
+						"logs:CreateLogStream",
+						"logs:PutLogEvents",
+						"dynamodb:GetItem",
+						"dynamodb:Query",
+						"dynamodb:PutItem",
+						"dynamodb:Batch*",
+						"dynamodb:DeleteItem",
+						"ssm:PutParameter",
+						"ssm:GetParameter",
+						"kms:Decrypt"
+					],
+					"Effect": "Allow",
+					"Resource": "*"
+				}
+			],
+			"Version": "2012-10-17"
+		},
+		"resource_type": "iam_policy",
+		"tags": {}
+	},
+	"simple-booking-userpool": {
+		"resource_type": "cognito_idp",
+		"password_policy": {
+			"minimum_length": 12,
+			"require_uppercase": false,
+			"require_symbols": true,
+			"require_lowercase": false,
+			"require_numbers": false
+		},
+		"auto_verified_attributes": ["email"],
+		"sms_configuration": {},
+		"username_attributes": ["email"],
+		"custom_attributes": [],
+		"client": {},
+		"tags": {}
+	},
+	"task10_api": {
+		"resource_type": "api_gateway",
+		"deploy_stage": "api",
+		"dependencies": [],
+		"resources": {
+			"/signup": {
+				"POST": {
+					"enable_proxy": true,
+					"integration_type": "lambda",
+					"lambda_name": "api_handler",
+					"authorization_type": "NONE"
+				}
+			},
+			"/signin": {
+				"POST": {
+					"enable_proxy": true,
+					"integration_type": "lambda",
+					"lambda_name": "api_handler",
+					"authorization_type": "NONE"
+				}
+			},
+			"/tables": {
+				"GET": {
+					"enable_proxy": true,
+					"integration_type": "lambda",
+					"lambda_name": "api_handler",
+					"authorization_type": "COGNITO_USER_POOLS"
+				},
+				"POST": {
+					"enable_proxy": true,
+					"integration_type": "lambda",
+					"lambda_name": "api_handler",
+					"authorization_type": "COGNITO_USER_POOLS"
+				}
+			},
+			"/reservations": {
+				"GET": {
+					"enable_proxy": true,
+					"integration_type": "lambda",
+					"lambda_name": "api_handler",
+					"authorization_type": "COGNITO_USER_POOLS"
+				},
+				"POST": {
+					"enable_proxy": true,
+					"integration_type": "lambda",
+					"lambda_name": "api_handler",
+					"authorization_type": "COGNITO_USER_POOLS"
+				}
+			}
+		},
+		"tags": {}
+	},
+	"Tables": {
+		"resource_type": "dynamodb_table",
+		"hash_key_name": "id",
+		"hash_key_type": "N",
+		"read_capacity": 1,
+		"write_capacity": 1,
+		"global_indexes": [],
+		"autoscaling": []
+	},
+	"Reservations": {
+		"resource_type": "dynamodb_table",
+		"hash_key_name": "reservationId",
+		"hash_key_type": "S",
+		"read_capacity": 1,
+		"write_capacity": 1,
+		"global_indexes": [],
+		"autoscaling": []
+	}
+}
