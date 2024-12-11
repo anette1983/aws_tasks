@@ -5,18 +5,6 @@ const { v4: uuidv4 } = require('uuid');
 
 // Хендлер для /signup
 const handleSignup = async (email, password) => {
-	if (
-		!email ||
-		!password ||
-		typeof email !== 'string' ||
-		typeof password !== 'string'
-	) {
-		return {
-			statusCode: 400,
-			body: JSON.stringify({ message: 'Invalid input' }),
-		};
-	}
-
 	const createUserParams = {
 		UserPoolId: process.env.CUPId,
 		Username: email,
@@ -30,7 +18,7 @@ const handleSignup = async (email, password) => {
 		const initiateAuthParams = {
 			AuthFlow: 'ADMIN_NO_SRP_AUTH',
 			UserPoolId: process.env.CUPId,
-			ClientId: clientId,
+			ClientId: process.env.CUPClientId,
 			AuthParameters: {
 				USERNAME: email,
 				PASSWORD: password,
@@ -70,18 +58,6 @@ const handleSignup = async (email, password) => {
 
 // Хендлер для /signin
 const handleSignin = async (email, password) => {
-	if (
-		!email ||
-		!password ||
-		typeof email !== 'string' ||
-		typeof password !== 'string'
-	) {
-		return {
-			statusCode: 400,
-			body: JSON.stringify({ message: 'Invalid input' }),
-		};
-	}
-
 	try {
 		const params = {
 			AuthFlow: 'ADMIN_NO_SRP_AUTH',
@@ -203,20 +179,6 @@ const handleCreateReservation = async (body) => {
 		slotTimeStart,
 		slotTimeEnd,
 	} = body;
-
-	if (
-		!tableNumber ||
-		!clientName ||
-		!phoneNumber ||
-		!date ||
-		!slotTimeStart ||
-		!slotTimeEnd
-	) {
-		return {
-			statusCode: 400,
-			body: JSON.stringify({ error: 'Missing required fields' }),
-		};
-	}
 
 	const reservationId = uuidv4();
 
