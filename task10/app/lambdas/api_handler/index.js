@@ -152,7 +152,7 @@ const handleCreateReservation = async (event) => {
 		const params = {
 			TableName: process.env.Reservations,
 			Item: {
-				reservationId,
+				id: reservationId,
 				tableNumber,
 				clientName,
 				phoneNumber,
