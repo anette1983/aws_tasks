@@ -43,7 +43,15 @@
 		"sms_configuration": {},
 		"username_attributes": ["email"],
 		"custom_attributes": [],
-		"client": {},
+		"client": {
+			"client_name": "simple-booking-client",
+			"generate_secret": false,
+			"explicit_auth_flows": [
+				"ALLOW_ADMIN_USER_PASSWORD_AUTH",
+				"ALLOW_REFRESH_TOKEN_AUTH",
+				"ALLOW_USER_PASSWORD_AUTH"
+			]
+		},
 		"tags": {}
 	},
 	"task10_api": {
