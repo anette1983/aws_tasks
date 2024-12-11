@@ -29,7 +29,7 @@ const handleSignup = async (email, password) => {
 		await cognito.adminCreateUser(createUserParams).promise();
 		const initiateAuthParams = {
 			AuthFlow: 'ADMIN_NO_SRP_AUTH',
-			UserPoolId: userPoolId,
+			UserPoolId: process.env.CUPId,
 			ClientId: clientId,
 			AuthParameters: {
 				USERNAME: email,
