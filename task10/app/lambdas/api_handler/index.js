@@ -25,6 +25,14 @@ const handleSignup = async (event) => {
 		};
 
 		await cognito.adminCreateUser(params).promise();
+		await cognito
+			.adminSetUserPassword({
+				UserPoolId: process.env.CUPId,
+				Username: email,
+				Password: password,
+				Permanent: true,
+			})
+			.promise();
 
 		return {
 			statusCode: 200,
