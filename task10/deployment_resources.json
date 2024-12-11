@@ -14,7 +14,12 @@
 						"dynamodb:DeleteItem",
 						"ssm:PutParameter",
 						"ssm:GetParameter",
-						"kms:Decrypt"
+						"kms:Decrypt",
+						"cognito-idp:AdminCreateUser",
+						"cognito-idp:AdminInitiateAuth",
+						"cognito-idp:GetIdentityProviderByIdentifier",
+						"cognito-idp:AdminRespondToAuthChallenge",
+						"cognito-idp:AdminConfirmSignUp"
 					],
 					"Effect": "Allow",
 					"Resource": "*"
@@ -45,10 +50,19 @@
 		"resource_type": "api_gateway",
 		"deploy_stage": "api",
 		"dependencies": [],
+		"authorizers": {
+			"authorizer": {
+				"type": "COGNITO_USER_POOLS",
+				"identity_source": "method.request.header.Authorization",
+				"user_pools": ["${booking_userpool}"],
+				"ttl": 300
+			}
+		},
 		"resources": {
 			"/signup": {
 				"POST": {
 					"enable_proxy": true,
+					"enable_cors": false,
 					"integration_type": "lambda",
 					"lambda_name": "api_handler",
 					"authorization_type": "NONE"
@@ -65,29 +79,33 @@
 			"/tables": {
 				"GET": {
 					"enable_proxy": true,
+					"enable_cors": true,
 					"integration_type": "lambda",
 					"lambda_name": "api_handler",
-					"authorization_type": "COGNITO_USER_POOLS"
+					"authorization_type": "authorizer"
 				},
 				"POST": {
 					"enable_proxy": true,
+					"enable_cors": true,
 					"integration_type": "lambda",
 					"lambda_name": "api_handler",
-					"authorization_type": "COGNITO_USER_POOLS"
+					"authorization_type": "authorizer"
 				}
 			},
 			"/reservations": {
 				"GET": {
 					"enable_proxy": true,
+					"enable_cors": true,
 					"integration_type": "lambda",
 					"lambda_name": "api_handler",
-					"authorization_type": "COGNITO_USER_POOLS"
+					"authorization_type": "authorizer"
 				},
 				"POST": {
 					"enable_proxy": true,
+					"enable_cors": true,
 					"integration_type": "lambda",
 					"lambda_name": "api_handler",
-					"authorization_type": "COGNITO_USER_POOLS"
+					"authorization_type": "authorizer"
 				}
 			}
 		},
