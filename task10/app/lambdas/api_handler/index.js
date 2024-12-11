@@ -4,55 +4,88 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 const { v4: uuidv4 } = require('uuid');
 
 // Хендлер для /signup
-const handleSignup = async (event) => {
-	console.log(event);
+const handleSignup = async (email, password) => {
+	if (
+		!email ||
+		!password ||
+		typeof email !== 'string' ||
+		typeof password !== 'string'
+	) {
+		return {
+			statusCode: 400,
+			body: JSON.stringify({ message: 'Invalid input' }),
+		};
+	}
 
-	const body = JSON.parse(event.body);
-
-	const { firstName, lastName, email, password } = body;
+	const createUserParams = {
+		UserPoolId: process.env.CUPId,
+		Username: email,
+		TemporaryPassword: password,
+		UserAttributes: [{ Name: 'email', Value: email }],
+		MessageAction: 'SUPPRESS',
+	};
 
 	try {
-		const signUpParams = {
-			ClientId: process.env.CUPClientId,
-			Username: email,
-			Password: password,
-			UserAttributes: [
-				{ Name: 'email', Value: email },
-				{ Name: 'given_name', Value: firstName },
-				{ Name: 'family_name', Value: lastName },
-			],
+		await cognito.adminCreateUser(createUserParams).promise();
+		const initiateAuthParams = {
+			AuthFlow: 'ADMIN_NO_SRP_AUTH',
+			UserPoolId: userPoolId,
+			ClientId: clientId,
+			AuthParameters: {
+				USERNAME: email,
+				PASSWORD: password,
+			},
 		};
 
-		await cognito.signUp(signUpParams).promise();
+		const signinResponse = await cognito
+			.adminInitiateAuth(initiateAuthParams)
+			.promise();
 
-		const confirmParams = {
-			UserPoolId: process.env.CUPId,
-			Username: email,
-		};
-
-		await cognito.adminConfirmSignUp(confirmParams).promise();
+		await cognito
+			.adminRespondToAuthChallenge({
+				UserPoolId: process.env.CUPId,
+				ClientId: process.env.CUPClientId,
+				ChallengeName: 'NEW_PASSWORD_REQUIRED',
+				Session: signinResponse.Session,
+				ChallengeResponses: {
+					USERNAME: email,
+					PASSWORD: password,
+					NEW_PASSWORD: password,
+				},
+			})
+			.promise();
 
 		return {
 			statusCode: 200,
-			body: JSON.stringify({ message: 'User signed up successfully!' }),
+			body: 'Sign-up process is successful',
 		};
 	} catch (error) {
-		console.error('Signup error:', JSON.stringify(error, null, 2));
+		console.error(error);
 		return {
 			statusCode: 400,
-			body: JSON.stringify({ error: error.message }),
+			body: JSON.stringify({ message: error.message }),
 		};
 	}
 };
 
 // Хендлер для /signin
-const handleSignin = async (event) => {
-	const body = JSON.parse(event.body);
-	const { email, password } = body;
+const handleSignin = async (email, password) => {
+	if (
+		!email ||
+		!password ||
+		typeof email !== 'string' ||
+		typeof password !== 'string'
+	) {
+		return {
+			statusCode: 400,
+			body: JSON.stringify({ message: 'Invalid input' }),
+		};
+	}
 
 	try {
 		const params = {
-			AuthFlow: 'USER_PASSWORD_AUTH',
+			AuthFlow: 'ADMIN_NO_SRP_AUTH',
+			UserPoolId: process.env.CUPId,
 			ClientId: process.env.CUPClientId,
 			AuthParameters: {
 				USERNAME: email,
@@ -60,7 +93,7 @@ const handleSignin = async (event) => {
 			},
 		};
 
-		const response = await cognito.initiateAuth(params).promise();
+		const response = await cognito.adminInitiateAuth(params).promise();
 
 		return {
 			statusCode: 200,
@@ -80,7 +113,7 @@ const handleSignin = async (event) => {
 const handleGetTables = async () => {
 	try {
 		const params = {
-			TableName: process.env.Tables,
+			TableName: process.env.tables_table,
 		};
 
 		const data = await dynamodb.scan(params).promise();
@@ -98,12 +131,10 @@ const handleGetTables = async () => {
 };
 
 // Хендлер для /tables POST
-const handleCreateTable = async (event) => {
-	const body = JSON.parse(event.body);
-
+const handleCreateTable = async (body) => {
 	try {
 		const params = {
-			TableName: process.env.Tables,
+			TableName: process.env.tables_table,
 			Item: {
 				id: body.id,
 				number: body.number,
@@ -127,9 +158,43 @@ const handleCreateTable = async (event) => {
 	}
 };
 
+//Хендлер для /tables/{tableId}
+
+const handleTableById = async (tableId) => {
+	if (!tableId) {
+		return {
+			statusCode: 400,
+			body: JSON.stringify({ message: 'There was an error in the request' }),
+		};
+	}
+
+	const params = {
+		TableName: process.env.tables_table,
+		KeyConditionExpression: '#id = :idValue',
+		ExpressionAttributeNames: {
+			'#id': 'id',
+		},
+		ExpressionAttributeValues: {
+			':idValue': parseInt(tableId),
+		},
+	};
+
+	try {
+		const data = await dynamodb.query(params).promise();
+		return {
+			statusCode: 200,
+			body: JSON.stringify(data.Items[0]),
+		};
+	} catch (error) {
+		return {
+			statusCode: 400,
+			body: JSON.stringify({ message: error.message }),
+		};
+	}
+};
+
 // Хендлер для /reservations POST
-const handleCreateReservation = async (event) => {
-	const body = JSON.parse(event.body);
+const handleCreateReservation = async (body) => {
 	const {
 		tableNumber,
 		clientName,
@@ -157,7 +222,7 @@ const handleCreateReservation = async (event) => {
 
 	try {
 		const params = {
-			TableName: process.env.Reservations,
+			TableName: process.env.reservations_table,
 			Item: {
 				id: reservationId,
 				tableNumber,
@@ -187,7 +252,7 @@ const handleCreateReservation = async (event) => {
 const handleGetReservations = async () => {
 	try {
 		const params = {
-			TableName: process.env.Reservations,
+			TableName: process.env.reservations_table,
 		};
 
 		const data = await dynamodb.scan(params).promise();
@@ -207,29 +272,44 @@ const handleGetReservations = async () => {
 // Хендлер для маршрутизації
 exports.handler = async (event) => {
 	const { path, httpMethod } = event;
+	let body;
+	if (event.body) {
+		try {
+			body = JSON.parse(event.body);
+		} catch (e) {
+			return {
+				statusCode: 400,
+				body: JSON.stringify({ message: 'Invalid JSON' }),
+			};
+		}
+	}
 
 	if (path === '/signup' && httpMethod === 'POST') {
-		return await handleSignup(event);
+		return await handleSignup(body.email, body.password);
 	}
 
 	if (path === '/signin' && httpMethod === 'POST') {
-		return await handleSignin(event);
+		return await handleSignin(body.email, body.password);
 	}
 
-	if (path === '/tables' && httpMethod === 'GET') {
-		return await handleGetTables(event);
+	if (event.resource === '/tables' && httpMethod === 'GET') {
+		return await handleGetTables();
 	}
 
-	if (path === '/tables' && httpMethod === 'POST') {
-		return await handleCreateTable(event);
+	if (event.resource === '/tables' && httpMethod === 'POST') {
+		return await handleCreateTable(body);
+	}
+
+	if (event.resource === '/tables/{tableId}' && event.httpMethod === 'GET') {
+		return handleTableById(event.pathParameters.tableId);
 	}
 
 	if (path === '/reservations' && httpMethod === 'POST') {
-		return await handleCreateReservation(event);
+		return await handleCreateReservation(body);
 	}
 
 	if (path === '/reservations' && httpMethod === 'GET') {
-		return await handleGetReservations(event);
+		return await handleGetReservations();
 	}
 
 	return {

@@ -18,25 +18,27 @@
 			"resource_type": "dynamodb_table"
 		},
 		{
-			"resource_name": "simple-booking-userpool",
+			"resource_name": "${booking_userpool}",
 			"resource_type": "cognito_idp"
 		}
 	],
 	"event_sources": [],
 	"env_variables": {
 		"CUPId": {
-			"resource_name": "simple-booking-userpool",
+			"resource_name": "${booking_userpool}",
 			"resource_type": "cognito_idp",
 			"parameter": "id"
 		},
 		"CUPClientId": {
-			"resource_name": "simple-booking-userpool",
+			"resource_name": "${booking_userpool}",
 			"resource_type": "cognito_idp",
 			"parameter": "client_id"
-		}
+		},
+		"tables_table": "${tables_table}",
+		"reservations_table": "${reservations_table}"
 	},
-	"publish_version": true,
-	"alias": "${lambdas_alias_name}",
+	"publish_version": false,
+	"alias": "learn",
 	"url_config": {},
 	"ephemeral_storage": 512,
 	"tags": {}
