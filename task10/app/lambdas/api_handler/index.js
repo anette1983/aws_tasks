@@ -169,6 +169,44 @@ const handleTableById = async (tableId) => {
 	}
 };
 
+const getAllReservations = async () => {
+	const params = {
+		TableName: process.env.reservations_table,
+	};
+	const data = await dynamodb.scan(params).promise();
+	return data.Items;
+};
+
+const getAllTables = async () => {
+	const params = {
+		TableName: process.env.tables_table,
+	};
+	const data = await dynamodb.scan(params).promise();
+	return data.Items;
+};
+
+const getReservationsByTableNumber = async () => {
+	const allReservations = await getAllReservations();
+	return allReservations.filter((r) => r.tableNumber === tableNumber);
+};
+
+const isOverlapping = async (newRes, existingRes) => {
+	const newStart = new Date(`${newRes.date}T${newRes.slotTimeStart}:00`);
+	const newEnd = new Date(`${newRes.date}T${newRes.slotTimeEnd}:00`);
+
+	return existingRes.some((res) => {
+		const resStart = new Date(`${res.date}T${res.slotTimeStart}:00`);
+		const resEnd = new Date(`${res.date}T${res.slotTimeEnd}:00`);
+
+		if (newStart < resEnd && newStart >= resStart) return true;
+		if (newEnd <= resEnd && newEnd > resStart) return true;
+		if (resStart <= newStart && resEnd >= newEnd) return true;
+		if (newStart <= resStart && newEnd >= resEnd) return true;
+
+		return false;
+	});
+};
+
 // Хендлер для /reservations POST
 const handleCreateReservation = async (body) => {
 	const {
@@ -179,6 +217,27 @@ const handleCreateReservation = async (body) => {
 		slotTimeStart,
 		slotTimeEnd,
 	} = body;
+
+	const tables = await getAllTables();
+	const tableExists = tables.some((t) => t.number === tableNumber);
+	if (!tableExists) {
+		return {
+			statusCode: 400,
+			body: JSON.stringify({ error: 'Table does not exist' }),
+		};
+	}
+
+	const existingReservations = await getReservationsByTableNumber(tableNumber);
+	const newReservation = { tableNumber, date, slotTimeStart, slotTimeEnd };
+
+	if (isOverlapping(newReservation, existingReservations)) {
+		return {
+			statusCode: 400,
+			body: JSON.stringify({
+				error: 'Reservation overlaps with an existing one',
+			}),
+		};
+	}
 
 	const reservationId = uuidv4();
 
