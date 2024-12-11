@@ -12,33 +12,32 @@ const handleSignup = async (event) => {
 	const { firstName, lastName, email, password } = body;
 
 	try {
-		const params = {
-			UserPoolId: process.env.CUPId,
+		const signUpParams = {
+			ClientId: process.env.CUPClientId,
 			Username: email,
-			TemporaryPassword: password,
+			Password: password,
 			UserAttributes: [
 				{ Name: 'email', Value: email },
-				{ Name: 'custom:firstName', Value: firstName },
-				{ Name: 'custom:lastName', Value: lastName },
+				{ Name: 'given_name', Value: firstName },
+				{ Name: 'family_name', Value: lastName },
 			],
-			MessageAction: 'SUPPRESS',
 		};
 
-		await cognito.adminCreateUser(params).promise();
-		await cognito
-			.adminSetUserPassword({
-				UserPoolId: process.env.CUPId,
-				Username: email,
-				Password: password,
-				Permanent: true,
-			})
-			.promise();
+		await cognito.signUp(signUpParams).promise();
+
+		const confirmParams = {
+			UserPoolId: process.env.CUPId,
+			Username: email,
+		};
+
+		await cognito.adminConfirmSignUp(confirmParams).promise();
 
 		return {
 			statusCode: 200,
 			body: JSON.stringify({ message: 'User signed up successfully!' }),
 		};
 	} catch (error) {
+		console.error('Signup error:', JSON.stringify(error, null, 2));
 		return {
 			statusCode: 400,
 			body: JSON.stringify({ error: error.message }),
